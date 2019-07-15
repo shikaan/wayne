@@ -2,18 +2,41 @@ package internal
 
 import (
 	"context"
+	"encoding/json"
+	"io/ioutil"
+	"os"
 
 	firebase "firebase.google.com/go"
 	"firebase.google.com/go/db"
 	"google.golang.org/api/option"
 )
 
+// FirebaseAuth lol
+type FirebaseAuth struct {
+	ProjectID string `json:"project_id"`
+}
+
 // GetDatabaseClient TODO: make me a singleton!
 func GetDatabaseClient(ctx context.Context) (*db.Client, error) {
-	opt := option.WithCredentialsFile("/home/manuel/dev/oss/short-go/firebase_auth.json")
+	firebaseAuthData, ioError := ioutil.ReadFile(os.Getenv("FIREBASE_AUTH_JSON"))
+
+	if ioError != nil {
+		return nil, ioError
+	}
+
+	var firebaseAuth FirebaseAuth
+
+	jsonError := json.Unmarshal(firebaseAuthData, &firebaseAuth)
+
+	if jsonError != nil {
+		return nil, jsonError
+	}
+
+	opt := option.WithCredentialsFile(os.Getenv("FIREBASE_AUTH_JSON"))
+
 	config := &firebase.Config{
-		ProjectID:   "go-short-56756",
-		DatabaseURL: "https://go-short-56756.firebaseio.com",
+		ProjectID:   firebaseAuth.ProjectID,
+		DatabaseURL: "https://" + firebaseAuth.ProjectID + ".firebaseio.com",
 	}
 
 	client, err := firebase.NewApp(ctx, config, opt)

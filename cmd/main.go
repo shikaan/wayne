@@ -3,8 +3,9 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
-	"example.com/goshort/internal"
+	"shikaan.io/wayne/internal"
 )
 
 func main() {
@@ -30,7 +31,7 @@ func main() {
 		}
 	})
 
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":"+os.Getenv("PORT"), nil); err != nil {
 		log.Panic("Cannot launch the server", err)
 	}
 }

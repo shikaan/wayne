@@ -1,4 +1,4 @@
-module example.com/goshort
+module shikaan.io/wayne
 
 require (
 	cloud.google.com/go v0.41.0
