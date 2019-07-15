@@ -1,7 +1,7 @@
 # Install dependencies
-FROM golang:1.11-alpine AS build_base
+FROM golang:1.11-stretch AS dependencies
 
-RUN apk add bash ca-certificates git gcc g++ libc-dev
+RUN apt install bash ca-certificates git
 WORKDIR /go/src/shikaan.io/wayne
 
 ENV GO111MODULE=on
@@ -12,26 +12,29 @@ COPY go.sum .
 RUN go mod download
 
 # Build binary
-FROM build_base AS server_builder
+FROM dependencies AS builder
 
 COPY . .
 
 RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go install -a -tags netgo -ldflags '-w -extldflags "-static"' ./cmd/main.go
 
 # Run application
-FROM alpine AS wayne
+FROM buildpack-deps:stretch-scm AS wayne
 
-ARG FIREBASE_AUTH_JSON_SOURCE
-ARG ACTIVEGATE_ADDRESS
+ARG DT_API_URL
+ARG DT_API_TOKEN
 
-RUN apk add ca-certificates
+RUN apt update && apt install -y ca-certificates fastjar
 
-ENV ACTIVEGATE_ADDRESS ${ACTIVEGATE_ADDRESS}
+ARG DT_ONEAGENT_OPTIONS="flavor=default&include=go"
+ENV DT_HOME="/opt/dynatrace"
 
-COPY --from=server_builder /go/bin/main /bin/wayne
+RUN mkdir -p "$DT_HOME" && \
+    wget -O "$DT_HOME/oneagent" "$DT_API_URL/v1/deployment/installer/agent/unix/paas/latest?Api-Token=$DT_API_TOKEN&$DT_ONEAGENT_OPTIONS"
 
-COPY --from=kjd61284.live.dynatrace.com/linux/oneagent-codemodules-musl:all / /
-ENV LD_PRELOAD /opt/dynatrace/oneagent/agent/lib64/liboneagentproc.so
+ENTRYPOINT [ "$DT_HOME/oneagent/dynatrace-agent64.sh" ]
+
+COPY --from=builder /go/bin/main /bin/wayne
 
 EXPOSE 8080
 

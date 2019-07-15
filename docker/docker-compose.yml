@@ -1,0 +1,10 @@
+version: "3"
+services:
+  wayne:
+    image: wayne:latest
+    env_file:
+      - ./local.env
+    volumes:
+      - ../firebase_auth.json:/tmp/firebase_auth.json
+    ports:
+      - 8080:8080
